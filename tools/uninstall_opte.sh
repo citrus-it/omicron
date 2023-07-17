@@ -170,7 +170,6 @@ function ensure_not_already_on_helios {
     pkg list "$STOCK_CONSOLIDATION"* || RC=$?
     if [[ $RC -eq 0 ]]; then
         echo "This system appears to already be running stock Helios"
-        exit 0
     fi
 }
 
