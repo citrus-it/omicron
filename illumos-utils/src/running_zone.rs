@@ -380,7 +380,7 @@ impl RunningZone {
         }
         let command = command.args(args);
 
-        let child = crate::spawn(command).map_err(|err| RunCommandError {
+        let child = crate::spawn_child(command).map_err(|err| RunCommandError {
             zone: self.name().to_string(),
             err,
         })?;
@@ -396,7 +396,7 @@ impl RunningZone {
 
         // Capture the result, and be sure to clear the template for this
         // process itself before returning.
-        let res = crate::run_child(command, child).map_err(|err| {
+        let res = crate::run_child(child).map_err(|err| {
             RunCommandError { zone: self.name().to_string(), err }
         });
         template.clear();
@@ -436,11 +436,11 @@ impl RunningZone {
         // that's actually run is irrelevant.
         let mut command = std::process::Command::new("echo");
         let command = command.args(args);
-        let child = crate::spawn(command).map_err(|err| RunCommandError {
+        let child = crate::spawn_child(command).map_err(|err| RunCommandError {
             zone: self.name().to_string(),
             err,
         })?;
-        crate::run_child(command, child)
+        crate::run_child(child)
             .map_err(|err| RunCommandError {
                 zone: self.name().to_string(),
                 err,

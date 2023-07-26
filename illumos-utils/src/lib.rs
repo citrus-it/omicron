@@ -60,13 +60,24 @@ pub enum ExecutionError {
     NotRunning,
 }
 
+pub struct SpawnedChild<'a> {
+    command: &'a std::process::Command,
+    child: std::process::Child,
+}
+
+impl SpawnedChild<'_> {
+    pub fn pid(&self) -> u32 {
+        self.child.id()
+    }
+}
+
 // We wrap this method in an inner module to make it possible to mock
 // these free functions.
 #[cfg_attr(any(test, feature = "testing"), mockall::automock, allow(dead_code))]
 mod inner {
     use super::*;
 
-    fn to_string(command: &mut std::process::Command) -> String {
+    fn to_string(command: &std::process::Command) -> String {
         command
             .get_args()
             .map(|s| s.to_string_lossy().into())
@@ -93,25 +104,27 @@ mod inner {
     // Helper functions for starting the process and checking the
     // exit code result.
 
-    pub fn spawn(
+    pub fn spawn_child(
         command: &mut std::process::Command,
-    ) -> Result<std::process::Child, ExecutionError> {
-        command.spawn().map_err(|err| ExecutionError::ExecutionStart {
-            command: to_string(command),
-            err,
-        })
+    ) -> Result<SpawnedChild, ExecutionError> {
+        let child = command.spawn().map_err(|err| {
+            ExecutionError::ExecutionStart { command: to_string(command), err }
+        })?;
+        Ok(SpawnedChild { command, child })
     }
 
     pub fn run_child(
-        command: &mut std::process::Command,
-        child: std::process::Child,
+        cmd: SpawnedChild,
     ) -> Result<std::process::Output, ExecutionError> {
-        let output = child.wait_with_output().map_err(|err| {
-            ExecutionError::ExecutionStart { command: to_string(command), err }
+        let output = cmd.child.wait_with_output().map_err(|err| {
+            ExecutionError::ExecutionStart {
+                command: to_string(cmd.command),
+                err,
+            }
         })?;
 
         if !output.status.success() {
-            return Err(output_to_exec_error(command, &output));
+            return Err(output_to_exec_error(cmd.command, &output));
         }
 
         Ok(output)

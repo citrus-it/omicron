@@ -3176,19 +3176,18 @@ mod test {
         wait_ctx.expect().return_once(|_, _| Ok(()));
 
         // Import the manifest, enable the service
-        let spawn_ctx = illumos_utils::spawn_context();
-        spawn_ctx.expect().times(..).returning(|_| {
-            std::process::Command::new("/bin/false").spawn().map_err(|err| {
+        let spawn_child_ctx = illumos_utils::spawn_child_context();
+        spawn_child_ctx.expect().times(..).returning(|command| {
+            let child = std::process::Command::new("/bin/false").spawn().map_err(|err| {
                 illumos_utils::ExecutionError::ExecutionStart {
                     command: "mock".to_string(),
                     err,
                 }
-            })
+            })?;
+            Ok(SpawnedChild { command, child })
         });
         let run_child_ctx = illumos_utils::run_child_context();
-        run_child_ctx.expect().times(..).returning(|_, mut child| {
-            let _ = child.kill();
-
+        run_child_ctx.expect().times(..).returning(|_| {
             Ok(std::process::Output {
                 status: std::process::ExitStatus::from_raw(0),
                 stdout: vec![],
