@@ -123,12 +123,15 @@ function install_packages {
   elif [[ "${HOST_OS}" == "SunOS" ]]; then
     CLANGVER=15
     PGVER=13
+    RTVER=13
     packages=(
       "pkg:/package/pkg"
       "build-essential"
       "library/postgresql-$PGVER"
       "pkg-config"
       "library/libxmlsec1"
+      "system/library/gcc-runtime@$RTVER"
+      "system/library/g++-runtime@$RTVER"
       # "bindgen leverages libclang to preprocess, parse, and type check C and C++ header files."
       "pkg:/ooce/developer/clang-$CLANGVER"
     )
@@ -151,7 +154,8 @@ function install_packages {
     }
 
     pkg mediator -a
-    pkg list -v "${packages[@]}"
+    pkg publisher
+    pkg list -afv "${packages[@]}"
   elif [[ "${HOST_OS}" == "Darwin" ]]; then
     packages=(
       'coreutils'
